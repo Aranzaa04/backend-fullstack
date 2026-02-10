@@ -8,9 +8,7 @@ if (!connectionString) {
 
 export const pool = new Pool({
   connectionString,
-  // Supabase suele requerir SSL en producción
-  ssl:
-    process.env.NODE_ENV === "production" || process.env.PGSSLMODE === "require"
-      ? { rejectUnauthorized: false }
-      : undefined,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });

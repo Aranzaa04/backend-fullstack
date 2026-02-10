@@ -17,59 +17,63 @@ const app = express();
 app.use(express.json());
 app.use(logger);
 
-// ✅ CORS BIEN CONFIGURADO
-const allowedOrigins = (
-  process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim())
-    : [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        // cuando despliegues tu frontend en Vercel, pon aquí tu dominio:
-        // "https://frontend-aranza.vercel.app",
-      ]
-);
-
+// =========================
+// CORS (CORRECTO PARA VITE)
+// =========================
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permite requests sin origin (Postman, curl, etc.)
+      const allowedOrigins = process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+        : ["*"];
+
+      // Permitir requests sin origin (Postman, navegador directo)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-      return callback(new Error(`CORS bloqueado para: ${origin}`));
+      return callback(
+        new Error(`CORS bloqueado para el origen: ${origin}`)
+      );
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: false,
+    credentials: true,
   })
 );
 
-// ✅ Para preflight requests
-app.options("*", cors());
-
 // =========================
-// RUTAS (API JSON)
+// RUTAS API
 // =========================
 app.use("/api/ventas", ventasRoutes);
 app.use("/api/producto", productoRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/detalle_venta", detalleVentaRoutes);
 
+// =========================
+// RUTA BASE
+// =========================
 app.get("/", (_req, res) => {
   res.json({
-    name: "express-aranza-ready (backend only)",
-    endpoints: ["/api/ventas", "/api/producto", "/api/usuarios", "/api/detalle_venta"],
+    name: "express-aranza-only (backend)",
+    endpoints: [
+      "/api/ventas",
+      "/api/producto",
+      "/api/usuarios",
+      "/api/detalle_venta",
+    ],
   });
 });
 
-// Health check
+// =========================
+// HEALTH CHECK
+// =========================
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
 // =========================
-// MANEJO DE ERRORES (SIEMPRE AL FINAL)
+// MANEJO DE ERRORES (AL FINAL)
 // =========================
 app.use(errorHandler);
 
