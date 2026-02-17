@@ -63,6 +63,7 @@ app.get("/", (_req, res) => {
       "/api/producto",
       "/api/usuarios",
       "/api/detalle_venta",
+      "/api/inventario",
     ],
   });
 });

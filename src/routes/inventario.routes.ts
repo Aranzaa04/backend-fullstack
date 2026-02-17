@@ -20,6 +20,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
   const row = await getInventarioById(id);
   if (!row) return res.status(404).json({ error: "Registro no encontrado" });
+
   res.json(row);
 });
 
@@ -34,6 +35,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 
   const updated = await updateInventario(id, req.body);
   if (!updated) return res.status(404).json({ error: "Registro no encontrado" });
+
   res.json(updated);
 });
 
@@ -43,6 +45,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
   const deletedId = await deleteInventario(id);
   if (deletedId === null) return res.status(404).json({ error: "Registro no encontrado" });
+
   res.json({ ok: true, deletedId });
 });
 
