@@ -25,7 +25,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = process.env.CORS_ORIGIN
-        ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+        ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
         : ["*"];
 
       // Permitir requests sin origin (Postman, navegador directo)
@@ -35,9 +35,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(
-        new Error(`CORS bloqueado para el origen: ${origin}`)
-      );
+      return callback(new Error(`CORS bloqueado para el origen: ${origin}`));
     },
     credentials: true,
   })
@@ -73,6 +71,13 @@ app.get("/", (_req, res) => {
 // =========================
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+// =========================
+// 404 (OPCIONAL PERO ÚTIL)
+// =========================
+app.use((_req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" });
 });
 
 // =========================

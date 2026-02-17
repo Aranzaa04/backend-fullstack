@@ -17,16 +17,6 @@ export async function getInventario() {
   return result.rows;
 }
 
-export async function getInventarioById(id: number) {
-  const result = await pool.query(
-    `SELECT id, tipo, peso, precio, cantidad
-     FROM inventario
-     WHERE id = $1`,
-    [id]
-  );
-  return result.rowCount ? result.rows[0] : null;
-}
-
 export async function createInventario(payload: Partial<Inventario>) {
   const { tipo, peso, precio, cantidad } = payload;
 
