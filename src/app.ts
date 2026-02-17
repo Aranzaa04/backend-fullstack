@@ -5,6 +5,7 @@ import ventasRoutes from "./routes/ventas.routes";
 import productoRoutes from "./routes/producto.routes";
 import usuariosRoutes from "./routes/usuarios.routes";
 import detalleVentaRoutes from "./routes/detalle_venta.routes";
+import inventarioRoutes from "./routes/inventario.routes";
 
 import { logger } from "./middlewares/logger.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -49,6 +50,7 @@ app.use("/api/ventas", ventasRoutes);
 app.use("/api/producto", productoRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/detalle_venta", detalleVentaRoutes);
+app.use("/api/inventario", inventarioRoutes);
 
 // =========================
 // RUTA BASE
