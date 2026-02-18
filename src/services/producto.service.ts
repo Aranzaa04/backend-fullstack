@@ -10,7 +10,7 @@ export async function getProductos() {
 }
 
 
-export async function getProductoById(id: number): Promise<Producto | null> {
+export async function getProductoById(id: number): Promise<any | null> {
   const result = await pool.query(
     `SELECT id, tipo, peso, precio, cantidad
      FROM producto
@@ -20,7 +20,7 @@ export async function getProductoById(id: number): Promise<Producto | null> {
   return result.rowCount ? result.rows[0] : null;
 }
 
-export async function createProducto(payload: Partial<Producto>): Promise<Producto> {
+export async function createProducto(payload: any): Promise<any> {
   const { tipo, peso, precio, cantidad } = payload;
   const result = await pool.query(
     `INSERT INTO producto (tipo, peso, precio, cantidad)
@@ -31,7 +31,7 @@ export async function createProducto(payload: Partial<Producto>): Promise<Produc
   return result.rows[0];
 }
 
-export async function updateProducto(id: number, payload: Partial<Producto>): Promise<Producto | null> {
+export async function updateProducto(id: number, payload: any): Promise<any | null> {
   const { tipo, peso, precio, cantidad } = payload;
   const result = await pool.query(
     `UPDATE producto
