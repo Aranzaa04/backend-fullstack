@@ -1,69 +1,71 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import {
   getVentas,
   getVentaById,
   createVenta,
-  updateVenta,
   deleteVenta,
+  checkoutVenta,
 } from "../services/ventas.service";
 
 const router = Router();
 
-// GET /api/ventas
-router.get("/", async (_req: Request, res: Response) => {
+// GET todas las ventas
+router.get("/", async (_req, res, next) => {
   try {
     const data = await getVentas();
     res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (e) {
+    next(e);
   }
 });
 
-// GET /api/ventas/:id
-router.get("/:id", async (req: Request, res: Response) => {
+// GET venta por id
+router.get("/:id", async (req, res, next) => {
   try {
-    const venta = await getVentaById(req.params.id);
-    if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
-    res.json(venta);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const data = await getVentaById(Number(req.params.id));
+    if (!data) return res.status(404).json({ error: "Venta no encontrada" });
+    res.json(data);
+  } catch (e) {
+    next(e);
   }
 });
 
-// POST /api/ventas
-router.post("/", async (req: Request, res: Response) => {
+// ✅ CHECKOUT (carrito → venta + compra)
+router.post("/checkout", async (req, res, next) => {
   try {
-    const { usuario_id, total, fecha } = req.body;
+    const { items } = req.body as {
+      items: { producto_id: number; cantidad: number }[];
+    };
 
-    if (!usuario_id) return res.status(400).json({ error: "usuario_id es requerido" });
-    if (total === undefined || total === null) return res.status(400).json({ error: "total es requerido" });
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "items es obligatorio" });
+    }
 
-    const created = await createVenta({ usuario_id, total, fecha });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const result = await checkoutVenta(items);
+    res.status(201).json(result);
+  } catch (e) {
+    next(e);
   }
 });
 
-// PUT /api/ventas/:id
-router.put("/:id", async (req: Request, res: Response) => {
+// Crear venta directa (opcional)
+router.post("/", async (req, res, next) => {
   try {
-    const updated = await updateVenta(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: "Venta no encontrada" });
-    res.json(updated);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const data = await createVenta(req.body);
+    res.status(201).json(data);
+  } catch (e) {
+    next(e);
   }
 });
 
-// DELETE /api/ventas/:id
-router.delete("/:id", async (req: Request, res: Response) => {
+// Borrar venta
+router.delete("/:id", async (req, res, next) => {
   try {
-    const deleted = await deleteVenta(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Venta no encontrada" });
-    res.json({ ok: true, deletedId: deleted.id });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const data = await deleteVenta(Number(req.params.id));
+    if (!data) return res.status(404).json({ error: "Venta no encontrada" });
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
   }
 });
 

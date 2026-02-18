@@ -1,64 +1,117 @@
 import { pool } from "../db/postgres";
 
+// =======================
+// GET ventas
+// =======================
 export async function getVentas() {
-  const result = await pool.query(
-    `SELECT id, usuario_id, total, fecha
-     FROM ventas
-     ORDER BY fecha DESC NULLS LAST`
+  const { rows } = await pool.query(
+    `SELECT * FROM venta ORDER BY fecha DESC`
   );
-  return result.rows;
+  return rows;
 }
 
-export async function getVentaById(id: string) {
-  const result = await pool.query(
-    `SELECT id, usuario_id, total, fecha
-     FROM ventas
-     WHERE id = $1`,
+export async function getVentaById(id: number) {
+  const { rows } = await pool.query(
+    `SELECT * FROM venta WHERE id = $1`,
     [id]
   );
-  return result.rows[0] ?? null;
+  return rows[0] || null;
 }
 
-export async function createVenta(data: {
-  usuario_id: string;
-  total: number;
-  fecha?: string;
-}) {
-  const { usuario_id, total, fecha } = data;
-
-  const result = await pool.query(
-    `INSERT INTO ventas (usuario_id, total, fecha)
-     VALUES ($1, $2, $3)
-     RETURNING id, usuario_id, total, fecha`,
-    [usuario_id, total, fecha ?? null]
+// =======================
+// CREATE venta simple
+// =======================
+export async function createVenta(payload: { total: number }) {
+  const { rows } = await pool.query(
+    `INSERT INTO venta (total, fecha)
+     VALUES ($1, NOW())
+     RETURNING *`,
+    [payload.total]
   );
-
-  return result.rows[0];
+  return rows[0];
 }
 
-export async function updateVenta(
-  id: string,
-  data: Partial<{ usuario_id: string; total: number; fecha: string }>
+export async function deleteVenta(id: number) {
+  const { rows } = await pool.query(
+    `DELETE FROM venta WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+// =======================
+// ✅ CHECKOUT COMPLETO
+// =======================
+export async function checkoutVenta(
+  items: { producto_id: number; cantidad: number }[]
 ) {
-  const { usuario_id, total, fecha } = data;
+  const client = await pool.connect();
 
-  const result = await pool.query(
-    `UPDATE ventas
-     SET usuario_id = COALESCE($1, usuario_id),
-         total      = COALESCE($2, total),
-         fecha      = COALESCE($3, fecha)
-     WHERE id = $4
-     RETURNING id, usuario_id, total, fecha`,
-    [usuario_id ?? null, total ?? null, fecha ?? null, id]
-  );
+  try {
+    await client.query("BEGIN");
 
-  return result.rows[0] ?? null;
-}
+    // 1️⃣ Traer inventario
+    const ids = items.map(i => i.producto_id);
+    const invRes = await client.query(
+      `SELECT id, tipo, precio, cantidad
+       FROM inventario
+       WHERE id = ANY($1::int[])`,
+      [ids]
+    );
 
-export async function deleteVenta(id: string) {
-  const result = await pool.query(
-    `DELETE FROM ventas WHERE id = $1 RETURNING id`,
-    [id]
-  );
-  return result.rows[0] ?? null;
+    const map = new Map<number, any>();
+    invRes.rows.forEach(r => map.set(r.id, r));
+
+    // 2️⃣ Validaciones
+    for (const it of items) {
+      const p = map.get(it.producto_id);
+      if (!p) throw new Error(`Producto no existe (id ${it.producto_id})`);
+      if (p.cantidad < it.cantidad) {
+        throw new Error(`Stock insuficiente de ${p.tipo}`);
+      }
+    }
+
+    // 3️⃣ Total
+    const total = items.reduce((acc, it) => {
+      const p = map.get(it.producto_id);
+      return acc + p.precio * it.cantidad;
+    }, 0);
+
+    // 4️⃣ Insertar en venta
+    const ventaRes = await client.query(
+      `INSERT INTO venta (total, fecha)
+       VALUES ($1, NOW())
+       RETURNING *`,
+      [total]
+    );
+
+    const venta = ventaRes.rows[0];
+
+    // 5️⃣ Insertar en compra (detalle)
+    const detalles = [];
+
+    for (const it of items) {
+      const p = map.get(it.producto_id);
+
+      const detRes = await client.query(
+        `INSERT INTO compra (venta_id, producto_id, cantidad, precio_unitario)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [venta.id, it.producto_id, it.cantidad, p.precio]
+      );
+
+      detalles.push(detRes.rows[0]);
+    }
+
+    // 🔥 Si tienes trigger → aquí se descuenta inventario automático
+    await client.query("COMMIT");
+
+    return { venta, compra: detalles };
+
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }

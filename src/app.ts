@@ -1,12 +1,13 @@
 import express from "express";
 import cors from "cors";
 
-import ventasRoutes from "./routes/ventas.routes";
+// ===== RUTAS =====
+import ventaRoutes from "./routes/ventas.routes";      // maneja tabla: venta
 import productoRoutes from "./routes/producto.routes";
 import usuariosRoutes from "./routes/usuarios.routes";
-import detalleVentaRoutes from "./routes/detalle_venta.routes";
 import inventarioRoutes from "./routes/inventario.routes";
 
+// ===== MIDDLEWARES =====
 import { logger } from "./middlewares/logger.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 
@@ -25,7 +26,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = process.env.CORS_ORIGIN
-        ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+        ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
         : ["*"];
 
       // Permitir requests sin origin (Postman, navegador directo)
@@ -35,7 +36,9 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS bloqueado para el origen: ${origin}`));
+      return callback(
+        new Error(`CORS bloqueado para el origen: ${origin}`)
+      );
     },
     credentials: true,
   })
@@ -44,10 +47,9 @@ app.use(
 // =========================
 // RUTAS API
 // =========================
-app.use("/api/ventas", ventasRoutes);
+app.use("/api/venta", ventaRoutes);        // ✅ venta + checkout
 app.use("/api/producto", productoRoutes);
 app.use("/api/usuarios", usuariosRoutes);
-app.use("/api/detalle_venta", detalleVentaRoutes);
 app.use("/api/inventario", inventarioRoutes);
 
 // =========================
@@ -55,12 +57,12 @@ app.use("/api/inventario", inventarioRoutes);
 // =========================
 app.get("/", (_req, res) => {
   res.json({
-    name: "express-aranza-only (backend)",
+    name: "express-aranza-backend",
     endpoints: [
-      "/api/ventas",
+      "/api/venta",
+      "/api/venta/checkout",
       "/api/producto",
       "/api/usuarios",
-      "/api/detalle_venta",
       "/api/inventario",
     ],
   });
