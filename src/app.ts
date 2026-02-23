@@ -4,6 +4,7 @@ import cors from "cors";
 // =========================
 // RUTAS
 // =========================
+import authRoutes from "./routes/auth.routes";
 import inventarioRoutes from "./routes/inventario.routes";
 import compraRoutes from "./routes/compra.routes";       // tabla venta / detalle_venta
 import ventaRoutes from "./routes/venta.routes";         // tabla compra / checkout
@@ -47,6 +48,7 @@ app.use(
 // =========================
 // RUTAS API
 // =========================
+app.use("/api/auth", authRoutes);              // autenticación
 app.use("/api/inventario", inventarioRoutes); // productos disponibles
 app.use("/api/compra", compraRoutes);         // tabla venta / detalle_venta
 app.use("/api/venta", ventaRoutes);           // tabla compra / checkout
@@ -60,6 +62,9 @@ app.get("/", (_req, res) => {
   res.json({
     name: "express-aranza-backend",
     endpoints: [
+      "/api/auth/register",
+      "/api/auth/login",
+      "/api/auth/me",
       "/api/inventario",
       "/api/compra",
       "/api/compra/checkout",

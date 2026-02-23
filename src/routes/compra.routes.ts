@@ -1,5 +1,5 @@
 import { Router } from "express";
-import pool from "../db/postgres"; // Ajusta según tu configuración de pool
+import { pool } from "../db/postgres"; // Ajusta según tu configuración de pool
 
 const router = Router();
 
