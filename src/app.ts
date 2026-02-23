@@ -1,13 +1,24 @@
 import express from "express";
 import cors from "cors";
 
+// =========================
+// RUTAS
+// =========================
 import inventarioRoutes from "./routes/inventario.routes";
-import compraRoutes from "./routes/compra.routes";
-import ventaRoutes from "./routes/venta.routes";
+import compraRoutes from "./routes/compra.routes";       // tabla venta / detalle_venta
+import ventaRoutes from "./routes/venta.routes";         // tabla compra / checkout
+import productoRoutes from "./routes/producto.routes";
+import usuariosRoutes from "./routes/usuarios.routes";
 
+// =========================
+// MIDDLEWARES
+// =========================
 import { logger } from "./middlewares/logger.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 
+// =========================
+// APP
+// =========================
 const app = express();
 
 // =========================
@@ -17,7 +28,7 @@ app.use(express.json());
 app.use(logger);
 
 // =========================
-// CORS (CORRECTO PARA VITE)
+// CORS (para Vite / Frontend)
 // =========================
 app.use(
   cors({
@@ -25,13 +36,8 @@ app.use(
       const allowedOrigins = process.env.CORS_ORIGIN
         ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
         : ["*"];
-
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error(`CORS bloqueado para el origen: ${origin}`));
     },
     credentials: true,
@@ -41,13 +47,11 @@ app.use(
 // =========================
 // RUTAS API
 // =========================
-app.use("/api/inventario", inventarioRoutes);
-
-// TU CABECERA/TICKET
-app.use("/api/compra", compraRoutes);
-
-// TU DETALLE/LÍNEAS
-app.use("/api/venta", ventaRoutes);
+app.use("/api/inventario", inventarioRoutes); // productos disponibles
+app.use("/api/compra", compraRoutes);         // tabla venta / detalle_venta
+app.use("/api/venta", ventaRoutes);           // tabla compra / checkout
+app.use("/api/producto", productoRoutes);
+app.use("/api/usuarios", usuariosRoutes);
 
 // =========================
 // RUTA BASE
@@ -60,6 +64,8 @@ app.get("/", (_req, res) => {
       "/api/compra",
       "/api/compra/checkout",
       "/api/venta",
+      "/api/producto",
+      "/api/usuarios",
     ],
   });
 });
@@ -67,16 +73,12 @@ app.get("/", (_req, res) => {
 // =========================
 // HEALTH CHECK
 // =========================
-app.get("/health", (_req, res) => {
-  res.json({ ok: true });
-});
+app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // =========================
 // 404
 // =========================
-app.use((_req, res) => {
-  res.status(404).json({ error: "Ruta no encontrada" });
-});
+app.use((_req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
 
 // =========================
 // MANEJO DE ERRORES

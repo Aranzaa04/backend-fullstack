@@ -1,41 +1,16 @@
-import { Router, Request, Response } from "express";
-import {
-  createInventario,
-  deleteInventario,
-  getInventario,
-  updateInventario,
-} from "../services/inventario.service";
+import { Router } from "express";
+import pool from "../db/postgres"; // tu pool de Postgres
 
 const router = Router();
 
-router.get("/", async (_req: Request, res: Response) => {
-  const rows = await getInventario();
-  res.json(rows);
-});
-
-router.post("/", async (req: Request, res: Response) => {
-  const created = await createInventario(req.body);
-  res.status(201).json(created);
-});
-
-router.put("/:id", async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) return res.status(400).json({ error: "id inválido" });
-
-  const updated = await updateInventario(id, req.body);
-  if (!updated) return res.status(404).json({ error: "Registro no encontrado" });
-
-  res.json(updated);
-});
-
-router.delete("/:id", async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) return res.status(400).json({ error: "id inválido" });
-
-  const deletedId = await deleteInventario(id);
-  if (deletedId === null) return res.status(404).json({ error: "Registro no encontrado" });
-
-  res.json({ ok: true, deletedId });
+// GET todos los productos
+router.get("/", async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT * FROM inventario WHERE cantidad > 0 ORDER BY id ASC");
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
