@@ -10,6 +10,7 @@ import compraRoutes from "./routes/compra.routes";       // tabla venta / detall
 import ventaRoutes from "./routes/venta.routes";         // tabla compra / checkout
 import productoRoutes from "./routes/producto.routes";
 import usuariosRoutes from "./routes/usuarios.routes";
+import proveedoresRoutes from "./routes/proveedores.routes";
 
 // =========================
 // MIDDLEWARES
@@ -54,6 +55,7 @@ app.use("/api/compra", compraRoutes);         // tabla venta / detalle_venta
 app.use("/api/venta", ventaRoutes);           // tabla compra / checkout
 app.use("/api/producto", productoRoutes);
 app.use("/api/usuarios", usuariosRoutes);
+app.use("/api/proveedores", proveedoresRoutes);
 
 // =========================
 // RUTA BASE
