@@ -5,7 +5,6 @@ const router = Router();
 
 /**
  * GET /api/proveedores
- * Lista proveedores
  */
 router.get("/", async (_req, res, next) => {
   try {
@@ -22,7 +21,7 @@ router.get("/", async (_req, res, next) => {
 
 /**
  * GET /api/proveedores/:id
- * Proveedor + sus entradas (y link a inventario)
+ * Proveedor + entradas
  */
 router.get("/:id", async (req, res, next) => {
   try {
@@ -35,19 +34,11 @@ router.get("/:id", async (req, res, next) => {
        where id = $1`,
       [id]
     );
-
     if (!proveedor.rows[0]) return res.status(404).json({ error: "Proveedor no encontrado" });
 
     const entradas = await pool.query(
-      `select ep.id,
-              ep.proveedor_id,
-              ep.inventario_id,
-              ep.tipo,
-              ep.peso,
-              ep.cantidad,
-              ep.creado_en,
-              i.precio as inventario_precio,
-              i.cantidad as inventario_stock
+      `select ep.id, ep.proveedor_id, ep.inventario_id, ep.tipo, ep.peso, ep.cantidad, ep.creado_en,
+              i.precio as inventario_precio, i.cantidad as inventario_stock
        from entrada_proveedor ep
        left join inventario i on i.id = ep.inventario_id
        where ep.proveedor_id = $1
@@ -96,10 +87,9 @@ router.post("/", async (req, res, next) => {
  *   ]
  * }
  *
- * Inserta entradas en entrada_proveedor.
- * Tu TRIGGER en SQL:
+ * ✅ SIN TRIGGERS:
  *  - crea/actualiza inventario
- *  - llena inventario_id automáticamente
+ *  - guarda entrada_proveedor con inventario_id
  */
 router.post("/:id/entradas", async (req, res, next) => {
   const client = await pool.connect();
@@ -112,7 +102,7 @@ router.post("/:id/entradas", async (req, res, next) => {
       return res.status(400).json({ error: "items es requerido y debe tener al menos 1 elemento" });
     }
 
-    // Validar que el proveedor exista
+    // Validar proveedor
     const prov = await client.query(`select id from proveedores where id = $1`, [proveedorId]);
     if (!prov.rows[0]) return res.status(404).json({ error: "Proveedor no encontrado" });
 
@@ -134,12 +124,45 @@ router.post("/:id/entradas", async (req, res, next) => {
         return res.status(400).json({ error: `Cantidad inválida para tipo=${tipo}` });
       }
 
-      // OJO: inventario_id lo llena el trigger (BEFORE INSERT) y lo regresamos con RETURNING
+      // 1) Buscar si ya existe en inventario (por tipo + peso)
+      const invSel = await client.query(
+        `select id, cantidad, precio
+         from inventario
+         where tipo = $1 and (peso is not distinct from $2)
+         limit 1`,
+        [tipo, peso]
+      );
+
+      let inventarioId: number;
+
+      if (invSel.rows[0]) {
+        inventarioId = invSel.rows[0].id;
+
+        // 2) Si existe: aumentar stock
+        await client.query(
+          `update inventario
+           set cantidad = cantidad + $1
+           where id = $2`,
+          [cantidad, inventarioId]
+        );
+      } else {
+        // 2) Si NO existe: crear producto en inventario
+        // precio por defecto 0 (luego lo editas en inventario)
+        const invIns = await client.query(
+          `insert into inventario (tipo, peso, precio, cantidad)
+           values ($1, $2, 0, $3)
+           returning id`,
+          [tipo, peso, cantidad]
+        );
+        inventarioId = invIns.rows[0].id;
+      }
+
+      // 3) Insertar entrada_proveedor con inventario_id
       const r = await client.query(
         `insert into entrada_proveedor (proveedor_id, inventario_id, tipo, peso, cantidad)
-         values ($1, null, $2, $3, $4)
+         values ($1, $2, $3, $4, $5)
          returning id, proveedor_id, inventario_id, tipo, peso, cantidad, creado_en`,
-        [proveedorId, tipo, peso, cantidad]
+        [proveedorId, inventarioId, tipo, peso, cantidad]
       );
 
       inserted.push(r.rows[0]);
@@ -151,13 +174,11 @@ router.post("/:id/entradas", async (req, res, next) => {
       ok: true,
       proveedor_id: proveedorId,
       entradas: inserted,
-      note: "Inventario se actualiza automáticamente por el trigger en Supabase",
+      note: "Inventario fue actualizado desde el backend (sin triggers).",
     });
-  } catch (e: any) {
+  } catch (e) {
     await client.query("rollback");
-
-    // Si tu trigger falla, llega aquí (por ejemplo, constraints)
-    res.status(400).json({ error: e?.message ?? "Error al insertar entradas" });
+    next(e);
   } finally {
     client.release();
   }
