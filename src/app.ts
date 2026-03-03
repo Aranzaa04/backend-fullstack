@@ -7,7 +7,6 @@ import compraRoutes from "./routes/compra.routes";
 import ventaRoutes from "./routes/venta.routes";
 import productoRoutes from "./routes/producto.routes";
 import usuariosRoutes from "./routes/usuarios.routes";
-<<<<<<< Updated upstream
 import proveedoresRoutes from "./routes/proveedores.routes";
 import notasRoutes from "./routes/notas.routes";
 
@@ -15,9 +14,6 @@ import loggerMiddleware from "./middlewares/logger.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 
 const app = express();
-=======
-import notasRoutes from "./routes/notas.routes";
->>>>>>> Stashed changes
 
 // =========================
 // MIDDLEWARES
@@ -48,12 +44,9 @@ app.use("/api/venta", ventaRoutes);
 app.use("/api/producto", productoRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/notas", notasRoutes);
-<<<<<<< Updated upstream
 
 // ✅ NUEVA: proveedores
 app.use("/api/proveedores", proveedoresRoutes);
-=======
->>>>>>> Stashed changes
 
 // =========================
 // RUTA BASE

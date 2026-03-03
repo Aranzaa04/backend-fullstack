@@ -16,13 +16,11 @@ type NotaPayload = {
 
 const DEFAULT_NOTE_COLOR = "#fce7f3";
 
-export async function getNotas(userId: number) {
+export async function getNotas() {
   const result = await pool.query(
-    `SELECT id, text, color, created_at, updated_at
+    `SELECT id, user_id, text, color, created_at, updated_at
      FROM notas
-     WHERE user_id = $1
      ORDER BY created_at DESC`,
-    [userId]
   );
 
   return result.rows;
@@ -35,7 +33,7 @@ export async function createNota(userId: number, payload: NotaPayload) {
   const result = await pool.query(
     `INSERT INTO notas (user_id, text, color)
      VALUES ($1, $2, $3)
-     RETURNING id, text, color, created_at, updated_at`,
+     RETURNING id, user_id, text, color, created_at, updated_at`,
     [userId, text, color]
   );
 
@@ -51,7 +49,7 @@ export async function updateNota(userId: number, noteId: string, payload: NotaPa
      SET text = COALESCE($1, text),
          color = COALESCE($2, color)
      WHERE id = $3 AND user_id = $4
-     RETURNING id, text, color, created_at, updated_at`,
+     RETURNING id, user_id, text, color, created_at, updated_at`,
     [text ?? null, color ?? null, noteId, userId]
   );
 

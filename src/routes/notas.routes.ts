@@ -8,7 +8,7 @@ router.use(authMiddleware);
 
 router.get("/", async (req, res, next) => {
   try {
-    const notas = await getNotas(req.usuario!.id);
+    const notas = await getNotas();
     return res.json(notas);
   } catch (error) {
     return next(error);
@@ -46,7 +46,7 @@ router.put("/:id", async (req, res, next) => {
     const nota = await updateNota(req.usuario!.id, noteId, { text, color });
 
     if (!nota) {
-      return res.status(404).json({ error: "Nota no encontrada" });
+      return res.status(403).json({ error: "Solo el creador puede editar esta nota" });
     }
 
     return res.json(nota);
@@ -60,7 +60,7 @@ router.delete("/:id", async (req, res, next) => {
     const deletedId = await deleteNota(req.usuario!.id, req.params.id);
 
     if (!deletedId) {
-      return res.status(404).json({ error: "Nota no encontrada" });
+      return res.status(403).json({ error: "Solo el creador puede eliminar esta nota" });
     }
 
     return res.json({ id: deletedId });
